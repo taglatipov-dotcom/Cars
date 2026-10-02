@@ -5,6 +5,7 @@ app = FastAPI()
 
 @app.get("/")
 async def root():
+    """docstring for root"""
     return {"message": "Hello World"}
 
 
