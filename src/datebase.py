@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase, Mapped
-from sqlalchemy.testing.schema import mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import JSON
 
 engine = create_async_engine(
     "sqlite+aiosqlite:///cars.db",
@@ -19,10 +19,10 @@ class CarsOrm(Modal):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
     mark: Mapped[int]
-    year_built: Mapped[int]
+    year_built: Mapped[int | None]
     description: Mapped[str | None]
     china_price: Mapped[int | None]
-    photos: Mapped[list[Mapped[str]]| None]
+    photos: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     engine_type: Mapped[str]
     engine_volume: Mapped[int| None]
     horsepower: Mapped[int| None]

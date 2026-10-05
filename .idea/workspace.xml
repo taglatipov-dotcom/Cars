@@ -4,7 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="31aaabe4-345d-4d3b-9593-21e88715e2e8" name="Changes" comment="add conections to DB" />
+    <list default="true" id="31aaabe4-345d-4d3b-9593-21e88715e2e8" name="Changes" comment="Create repository.py">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/datebase.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/datebase.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/repository.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/repository.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -16,6 +22,7 @@
         <option value="FastAPI main" />
         <option value="FastAPI test_main" />
         <option value="Python Script" />
+        <option value="Dockerfile" />
       </list>
     </option>
   </component>
@@ -229,7 +236,15 @@
       <option name="project" value="LOCAL" />
       <updated>1791189951968</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Create repository.py">
+      <option name="closed" value="true" />
+      <created>1791190102352</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1791190102352</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -253,7 +268,8 @@
     <MESSAGE value="Init requirements, add uvicorn starter" />
     <MESSAGE value="Init database.py" />
     <MESSAGE value="add conections to DB" />
-    <option name="LAST_COMMIT_MESSAGE" value="add conections to DB" />
+    <MESSAGE value="Create repository.py" />
+    <option name="LAST_COMMIT_MESSAGE" value="Create repository.py" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Cars$Cars.coverage" NAME="Cars Coverage Results" MODIFIED="1790941283505" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
