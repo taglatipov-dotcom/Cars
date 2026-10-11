@@ -18,7 +18,7 @@ class CarsOrm(Modal):
     __tablename__ = "cars"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
-    mark: Mapped[int]
+    mark: Mapped[str]
     year_built: Mapped[int | None]
     description: Mapped[str | None]
     china_price: Mapped[int | None]

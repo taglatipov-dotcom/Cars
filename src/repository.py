@@ -24,5 +24,3 @@ class CarRepository:
             cars_models = result.scalars().all()
             cars_schemas = [SCar.model_validate(car_model) for car_model in cars_models]
             return cars_schemas
-
-

@@ -3,8 +3,8 @@ from pydantic import BaseModel, Field, ConfigDict
 
 
 class SCarAdd(BaseModel):
-    name: str
-    mark: str
+    name: str | int
+    mark: str | int
     year_built: int | None = None
     description: str | None = None
     china_price: float | None = None
