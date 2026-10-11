@@ -25,10 +25,8 @@ app.include_router(cars_router)
 
 
 origins = [
-    "http://localhost",
-    "http://localhost:8080",
-    "http://localhost.tiangolo.com",
-    "https://localhost.tiangolo.com",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
 
 ]
 
@@ -37,4 +35,5 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
+    allow_headers=["*"],
 )
