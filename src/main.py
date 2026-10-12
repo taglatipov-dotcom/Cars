@@ -1,33 +1,37 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
+from src.database import create_tables
+from src.router import calcus_client
 from src.router import router as cars_router
-
-from  fastapi.middleware.cors import CORSMiddleware
-
-# from contextlib import asynccontextmanager
-#
-# from src.datebase import create_tables, delete_tables
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     await delete_tables()
-#     print("База данных очищена")
-#     await create_tables()
-#     print("База данных готова")
-#     yield
-#     print("Выключение")
+from src.reviews_router import router as reviews_router
+from src.blog_router import router as blog_router
+from src.auth_router import router as auth_router
+from src.leads_router import router as leads_router
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await create_tables()
+    print("База данных готова")
+    yield
+    await calcus_client.close()
+    print("Выключение")
 
 
-# app = FastAPI(lifespan=lifespan)
-app = FastAPI()
+app = FastAPI(lifespan=lifespan, title="Car API", version="1.0")
+
+app.include_router(auth_router)
 app.include_router(cars_router)
-
+app.include_router(reviews_router)
+app.include_router(blog_router)
+app.include_router(leads_router)
 
 origins = [
     "http://localhost:5173",
-    "http://127.0.0.1:5173"
-
+    "http://127.0.0.1:5173",
 ]
 
 app.add_middleware(
