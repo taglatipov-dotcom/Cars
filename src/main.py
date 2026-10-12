@@ -1,15 +1,18 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from src.database import create_tables
 from src.router import calcus_client
 from src.router import router as cars_router
 from src.reviews_router import router as reviews_router
 from src.blog_router import router as blog_router
-from src.auth_router import router as auth_router
 from src.leads_router import router as leads_router
+from src.auth_router import router as auth_router
+from src.upload_router import router as upload_router
 
 
 @asynccontextmanager
@@ -23,11 +26,19 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan, title="Car API", version="1.0")
 
+# Папка для загруженных картинок
+UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+# Раздача статики: GET /uploads/<filename>
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+
 app.include_router(auth_router)
 app.include_router(cars_router)
 app.include_router(reviews_router)
 app.include_router(blog_router)
 app.include_router(leads_router)
+app.include_router(upload_router)
 
 origins = [
     "http://localhost:5173",
@@ -41,3 +52,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+#todo отправка уведомлений
+#todo множественная загрузка фото
+#todo калькулятор
+#todo доавить реальные отзывы
+#todo добавить реальные статьи
+#todo добавить реальные машины
+#todo добавить реальную политику конфиденциальности
+#todo проверить все плашки текстовые на сайте
+#todo сделать профиль на дзен
+#todo продвижение сайта
+

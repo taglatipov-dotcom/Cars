@@ -1,3 +1,6 @@
 .venv
 cars.db
 .env
+# Загруженные картинки
+src/uploads/*
+!src/uploads/.gitkeep

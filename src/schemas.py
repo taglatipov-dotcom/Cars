@@ -320,3 +320,8 @@ class SLeadId(BaseModel):
 class SDeleteLeadResult(BaseModel):
     ok: bool = True
     lead_id: int
+
+class SUploadResult(BaseModel):
+    url: str
+    filename: str
+    size: int
