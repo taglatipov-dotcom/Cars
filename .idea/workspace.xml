@@ -4,13 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="31aaabe4-345d-4d3b-9593-21e88715e2e8" name="Changes" comment="fix">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/reviews_router.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/reviews_router.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/schemas.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/schemas.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/upload_router.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/upload_router.py" afterDir="false" />
-    </list>
+    <list default="true" id="31aaabe4-345d-4d3b-9593-21e88715e2e8" name="Changes" comment="ad photo review" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -367,7 +361,15 @@
       <option name="project" value="LOCAL" />
       <updated>1791802024419</updated>
     </task>
-    <option name="localTasksCounter" value="20" />
+    <task id="LOCAL-00020" summary="ad photo review">
+      <option name="closed" value="true" />
+      <created>1791957233893</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1791957233893</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -402,7 +404,8 @@
     <MESSAGE value="add multi photo loading" />
     <MESSAGE value="fix culc" />
     <MESSAGE value="fix" />
-    <option name="LAST_COMMIT_MESSAGE" value="fix" />
+    <MESSAGE value="ad photo review" />
+    <option name="LAST_COMMIT_MESSAGE" value="ad photo review" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Cars$Cars.coverage" NAME="Cars Coverage Results" MODIFIED="1790941283505" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
