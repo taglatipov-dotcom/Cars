@@ -111,11 +111,11 @@ async def approve_review(
     new_review = {
         "id": new_id,
         "name": target["name"],
-        # Если у посетителя не было аватара — сгенерируем детерминированный
         "avatar": target.get("avatar") or f"https://i.pravatar.cc/150?u=review{new_id}",
         "rating": target["rating"],
         "text": target["text"],
         "car": target["car"],
+        "photos": target.get("photos") or [],
     }
     reviews.append(new_review)
     _save_reviews(reviews)

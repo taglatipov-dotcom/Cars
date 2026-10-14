@@ -53,3 +53,47 @@ async def upload_image(
         "filename": filename,
         "size": len(contents),
     }
+
+PUBLIC_ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+PUBLIC_MAX_FILE_SIZE = 3 * 1024 * 1024  # 3 МБ
+
+
+@router.post("/public", status_code=status.HTTP_201_CREATED)
+async def upload_public_image(
+    request: Request,
+    file: UploadFile = File(...),
+) -> dict:
+    """
+    Публичная загрузка фото к отзыву.
+    Без JWT, но с более жёсткими ограничениями:
+      • только JPG/PNG/WEBP (без SVG — XSS),
+      • максимум 3 МБ.
+    """
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Не указано имя файла")
+
+    ext = Path(file.filename).suffix.lower()
+    if ext not in PUBLIC_ALLOWED_EXTENSIONS:
+        allowed = ", ".join(sorted(PUBLIC_ALLOWED_EXTENSIONS))
+        raise HTTPException(
+            status_code=400,
+            detail=f"Недопустимый формат. Разрешены: {allowed}",
+        )
+
+    contents = await file.read()
+    if len(contents) > PUBLIC_MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Файл больше {PUBLIC_MAX_FILE_SIZE // (1024 * 1024)} МБ",
+        )
+
+    filename = f"{uuid.uuid4().hex}{ext}"
+    dest = UPLOAD_DIR / filename
+    dest.write_bytes(contents)
+
+    base = str(request.base_url).rstrip("/")
+    return {
+        "url": f"{base}/uploads/{filename}",
+        "filename": filename,
+        "size": len(contents),
+    }

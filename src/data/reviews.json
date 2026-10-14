@@ -86,5 +86,16 @@
     "rating": 4,
     "text": "sy5r6u7ru5",
     "car": "ryyr5y6t"
+  },
+  {
+    "id": 12,
+    "name": "Тагир",
+    "avatar": "http://localhost:8000/uploads/e3c1bedfd4b940db96ed399999d727a1.jpg",
+    "rating": 5,
+    "text": "уакпрнепупкуп",
+    "car": "ryyr5y6t",
+    "photos": [
+      "http://localhost:8000/uploads/2160ae3f968349fb9db73b46ba1a2380.jpg"
+    ]
   }
 ]

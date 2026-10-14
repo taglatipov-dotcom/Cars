@@ -186,14 +186,16 @@ class SReview(BaseModel):
     rating: int = Field(ge=1, le=5)
     text: str
     car: str
+    photos: list[str] | None = None
 
 class SReviewAdd(BaseModel):
-    """Создание отзыва. id назначается сервером."""
+    """Создание отзыва админом. id назначается сервером."""
     name: str
     avatar: str | None = None
     rating: int = Field(ge=1, le=5)
     text: str
     car: str
+    photos: list[str] | None = None
 
 
 class SReviewUpdate(BaseModel):
@@ -203,7 +205,7 @@ class SReviewUpdate(BaseModel):
     rating: int | None = Field(default=None, ge=1, le=5)
     text: str | None = None
     car: str | None = None
-
+    photos: list[str] | None = None
 
 class SReviewId(BaseModel):
     ok: bool = True
@@ -274,7 +276,7 @@ class SReviewSubmit(BaseModel):
     rating: int = Field(ge=1, le=5)
     text: str = Field(min_length=10, max_length=1000)
     car: str = Field(min_length=2, max_length=200)
-
+    photos: list[str] | None = None
 
 class SPendingReview(SReviewSubmit):
     """Отзыв на модерации — то же + id, avatar, дата."""
