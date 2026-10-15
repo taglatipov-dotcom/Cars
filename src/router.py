@@ -1,4 +1,7 @@
+import asyncio
 from typing import Annotated
+
+import aiohttp
 
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 
@@ -114,4 +117,13 @@ async def delete_car(
 
 @router.post("/cal")
 async def get_calcus(car: Annotated[SCarAdd, Depends()]):
-    return await calcus_client.get_price(car)
+    # Раньше любая ошибка (нет цены, внешний API недоступен) давала 500.
+    try:
+        return await calcus_client.get_price(car)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except (aiohttp.ClientError, asyncio.TimeoutError):
+        raise HTTPException(
+            status_code=502,
+            detail="Сервис расчёта таможни временно недоступен",
+        )

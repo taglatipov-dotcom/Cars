@@ -1,4 +1,19 @@
+# Окружение и служебное
 .venv
+venv
+.git
+.idea
+.pytest_cache
+**/__pycache__
+tests
+storage
+
+# Секреты — передаются через env_file в docker-compose, а не вшиваются в образ
+**/.env
+
+# Данные — живут в volume, а не в образе (иначе каждая сборка затирает их)
+**/cars.db
+src/uploads
+
 Dockerfile
-cars.db
-.env
+docker-compose.yml

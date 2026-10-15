@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime
 
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ClientTimeout
 
 from src.config import settings
 from src.schemas import SCarAdd
@@ -26,7 +26,11 @@ class HttpClient:
 
     async def _get_session(self) -> ClientSession:
         if self._session is None or self._session.closed:
-            self._session = ClientSession(base_url=self._base_url, headers=self._headers)
+            self._session = ClientSession(
+                base_url=self._base_url,
+                headers=self._headers,
+                timeout=ClientTimeout(total=15),  # без таймаута запрос мог висеть минутами
+            )
         return self._session
 
     async def close(self):

@@ -1,0 +1,16 @@
+# Запуск:   docker compose up -d --build
+# Логи:     docker compose logs -f api
+# Стоп:     docker compose down        (данные в ./storage сохраняются)
+services:
+  api:
+    build: .
+    container_name: ilsatao-api
+    restart: unless-stopped            # поднимется сам после перезагрузки сервера
+    env_file:
+      - src/.env                       # секреты читаются при запуске, в образ не попадают
+    environment:
+      DATA_DIR: /app/storage
+    ports:
+      - "127.0.0.1:8000:8000"          # только для nginx; снаружи порт 8000 закрыт
+    volumes:
+      - ./storage:/app/storage         # БАЗА, JSON, КАРТИНКИ — на диске сервера

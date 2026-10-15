@@ -1,9 +1,7 @@
-import json
-from pathlib import Path
-
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.auth import get_current_admin
+from src.storage import json_path, load_json_list, save_json_list
 from src.schemas import (
     SBlog,
     SBlogAdd,
@@ -15,22 +13,15 @@ from src.schemas import (
 
 router = APIRouter(prefix="/blog", tags=["Блог"])
 
-DATA_PATH = Path(__file__).parent / "data" / "blogs.json"
+DATA_PATH = json_path("blogs.json")
 
-
-# ---------- Внутренние хелперы ----------
 
 def _load_blogs() -> list[dict]:
-    if not DATA_PATH.exists():
-        return []
-    with DATA_PATH.open("r", encoding="utf-8") as f:
-        return json.load(f)
+    return load_json_list(DATA_PATH)
 
 
 def _save_blogs(blogs: list[dict]) -> None:
-    DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with DATA_PATH.open("w", encoding="utf-8") as f:
-        json.dump(blogs, f, ensure_ascii=False, indent=2)
+    save_json_list(DATA_PATH, blogs)
 
 
 # ---------- Список статей (превью, без content) ----------

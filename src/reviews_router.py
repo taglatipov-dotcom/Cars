@@ -1,10 +1,9 @@
-import json
 from datetime import datetime, timezone
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.auth import get_current_admin
+from src.storage import json_path, load_json_list, save_json_list
 from src.schemas import (
     SDeleteReviewResult,
     SPendingReview,
@@ -17,36 +16,24 @@ from src.schemas import (
 
 router = APIRouter(prefix="/reviews", tags=["Отзывы"])
 
-DATA_PATH = Path(__file__).parent / "data" / "reviews.json"
-PENDING_PATH = Path(__file__).parent / "data" / "pending_reviews.json"
+DATA_PATH = json_path("reviews.json")
+PENDING_PATH = json_path("pending_reviews.json")
 
-
-# ---------- Внутренние хелперы ----------
 
 def _load_reviews() -> list[dict]:
-    if not DATA_PATH.exists():
-        return []
-    with DATA_PATH.open("r", encoding="utf-8") as f:
-        return json.load(f)
+    return load_json_list(DATA_PATH)
 
 
 def _save_reviews(reviews: list[dict]) -> None:
-    DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with DATA_PATH.open("w", encoding="utf-8") as f:
-        json.dump(reviews, f, ensure_ascii=False, indent=2)
+    save_json_list(DATA_PATH, reviews)
 
 
 def _load_pending() -> list[dict]:
-    if not PENDING_PATH.exists():
-        return []
-    with PENDING_PATH.open("r", encoding="utf-8") as f:
-        return json.load(f)
+    return load_json_list(PENDING_PATH)
 
 
 def _save_pending(items: list[dict]) -> None:
-    PENDING_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with PENDING_PATH.open("w", encoding="utf-8") as f:
-        json.dump(items, f, ensure_ascii=False, indent=2)
+    save_json_list(PENDING_PATH, items)
 
 
 # ============================================================

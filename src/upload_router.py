@@ -4,12 +4,32 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 
 from src.auth import get_current_admin
+from src.config import UPLOAD_DIR
 
 router = APIRouter(prefix="/upload", tags=["Загрузка файлов"])
-
-# Папка хранения — src/uploads/
-UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+# Сигнатуры файлов: проверяем, что внутри действительно картинка,
+# а не, например, HTML/скрипт с расширением .jpg
+_MAGIC = {
+    ".jpg": (b"\xff\xd8\xff",),
+    ".jpeg": (b"\xff\xd8\xff",),
+    ".png": (b"\x89PNG\r\n\x1a\n",),
+    ".gif": (b"GIF87a", b"GIF89a"),
+    ".webp": (b"RIFF",),
+}
+
+
+def _looks_like_image(ext: str, contents: bytes) -> bool:
+    if ext == ".svg":
+        return b"<svg" in contents[:2048].lower()
+    sigs = _MAGIC.get(ext)
+    if not sigs:
+        return False
+    ok = any(contents.startswith(s) for s in sigs)
+    if ext == ".webp":
+        ok = ok and contents[8:12] == b"WEBP"
+    return ok
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 МБ
@@ -41,15 +61,18 @@ async def upload_image(
             detail=f"Файл больше {MAX_FILE_SIZE // (1024 * 1024)} МБ",
         )
 
+    if not _looks_like_image(ext, contents):
+        raise HTTPException(status_code=400, detail="Файл не похож на изображение")
+
     # Уникальное имя — uuid + исходное расширение
     filename = f"{uuid.uuid4().hex}{ext}"
     dest = UPLOAD_DIR / filename
     dest.write_bytes(contents)
 
-    # Собираем абсолютный URL — фронт сохраняет его как есть
-    base = str(request.base_url).rstrip("/")
+    # Относительный URL: фронт сам превращает его в /api/uploads/...
+    # (раньше тут был http://127.0.0.1:8000/... — внутренний адрес за nginx)
     return {
-        "url": f"{base}/uploads/{filename}",
+        "url": f"/uploads/{filename}",
         "filename": filename,
         "size": len(contents),
     }
@@ -87,13 +110,15 @@ async def upload_public_image(
             detail=f"Файл больше {PUBLIC_MAX_FILE_SIZE // (1024 * 1024)} МБ",
         )
 
+    if not _looks_like_image(ext, contents):
+        raise HTTPException(status_code=400, detail="Файл не похож на изображение")
+
     filename = f"{uuid.uuid4().hex}{ext}"
     dest = UPLOAD_DIR / filename
     dest.write_bytes(contents)
 
-    base = str(request.base_url).rstrip("/")
     return {
-        "url": f"{base}/uploads/{filename}",
+        "url": f"/uploads/{filename}",
         "filename": filename,
         "size": len(contents),
     }

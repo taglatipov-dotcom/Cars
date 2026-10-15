@@ -1,6 +1,17 @@
 .venv
-cars.db
+.idea
+__pycache__/
+.pytest_cache/
 .env
-# Загруженные картинки
+cars.db
+
+# Рабочие данные сервера (база, JSON, картинки) — не в git
+storage/
+
+# Загруженные картинки (локальная разработка)
 src/uploads/*
 !src/uploads/.gitkeep
+
+# Живые данные с персональной информацией — только на сервере (storage/)
+src/data/leads.json
+src/data/pending_reviews.json

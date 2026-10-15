@@ -1,7 +1,7 @@
 """Генератор значений для .env: bcrypt-хеш пароля + JWT-секрет.
 
 Запуск:
-    python scripts/generate_admin_credentials.py
+    python src/scripts/generate_admin_credentials.py
 """
 import secrets
 import sys
@@ -24,11 +24,12 @@ def main() -> None:
 
     print()
     print("=" * 60)
-    print("Скопируйте строки ниже в .env (в корне бэкенда):")
+    print("Скопируйте строки ниже в src/.env:")
     print("=" * 60)
     print("ADMIN_USERNAME=admin")
-    print(f"ADMIN_PASSWORD_HASH={hashed}")
-    print(f"JWT_SECRET_KEY={secret}")
+    # Одинарные кавычки обязательны: в хеше есть $, docker compose иначе его подставит
+    print(f"ADMIN_PASSWORD_HASH='{hashed}'")
+    print(f"JWT_SECRET_KEY='{secret}'")
     print("JWT_ALGORITHM=HS256")
     print("JWT_EXPIRE_MINUTES=480")
 

@@ -8,6 +8,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from src.config import settings
+
 # .env лежит рядом с этим файлом (src/.env)
 ENV_PATH = Path(__file__).resolve().parent / ".env"
 load_dotenv(dotenv_path=ENV_PATH)
@@ -110,7 +112,7 @@ def notify_new_lead(lead: dict) -> None:
 Источник:              {lead.get('source') or '—'}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Открыть в админке: http://localhost:5173/admin/leads
+Открыть в админке: {settings.SITE_URL.rstrip('/')}/admin/leads
 """
 
     send_email(subject, body)

@@ -1,11 +1,12 @@
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from src.config import DATA_DIR, UPLOAD_DIR
 from src.database import create_tables
+from src.storage import ensure_storage
 from src.router import calcus_client
 from src.router import router as cars_router
 from src.reviews_router import router as reviews_router
@@ -17,8 +18,9 @@ from src.upload_router import router as upload_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    ensure_storage()
     await create_tables()
-    print("База данных готова")
+    print(f"База данных готова, хранилище: {DATA_DIR}")
     yield
     await calcus_client.close()
     print("Выключение")
@@ -26,8 +28,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan, title="Car API", version="1.0")
 
-# Папка для загруженных картинок
-UPLOAD_DIR = Path(__file__).resolve().parent / "uploads"
+# Папка для загруженных картинок (внутри DATA_DIR, см. config.py)
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # Раздача статики: GET /uploads/<filename>

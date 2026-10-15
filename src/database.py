@@ -2,10 +2,10 @@ from sqlalchemy import JSON, Boolean, Float, Integer, String, Text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from src.config import BASE_DIR
+from src.config import DB_PATH
 
 engine = create_async_engine(
-    f"sqlite+aiosqlite:///{BASE_DIR / 'cars.db'}",
+    f"sqlite+aiosqlite:///{DB_PATH}",
 )
 
 new_session = async_sessionmaker(engine, expire_on_commit=False)
@@ -89,10 +89,13 @@ class CarsOrm(Base):
 
 
 async def create_tables():
+    # create_all создаёт только ОТСУТСТВУЮЩИЕ таблицы — существующие данные не трогает.
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
 
 
 async def delete_tables():
+    # ОПАСНО: удаляет все машины. Нигде не вызывается — только вручную.
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.drop_all)
