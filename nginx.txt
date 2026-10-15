@@ -1,3 +1,8 @@
+АКТУАЛЬНЫЙ КОНФИГ: deploy/nginx-ilsatao.conf
+(установка: sudo cp /root/Cars/deploy/nginx-ilsatao.conf /etc/nginx/sites-available/ilsatao && sudo nginx -t && sudo systemctl reload nginx)
+
+Ниже — старые заметки по первичной настройке.
+
 sudo nano /etc/nginx/sites-available/ilsatao
 
 server {

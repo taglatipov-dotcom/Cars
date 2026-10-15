@@ -105,10 +105,10 @@ docker compose up -d --build
    curl -s http://127.0.0.1:8000/seo/render/catalog | grep -o "<title>.*</title>"
    ```
    Должен прийти заголовок «Каталог автомобилей из Китая с ценами | ILSATAO».
-3. **nginx**: в `/etc/nginx/sites-available/ilsatao` в блок `server { ... listen 443 ... }`
-   добавить блоки из `nginx.txt` (раздел «SEO»: регулярная `location` для страниц,
-   `location @spa`, `location = /sitemap.xml`) и заменить `location /api/` на `location ^~ /api/`.
+3. **nginx**: готовый конфиг лежит в `deploy/nginx-ilsatao.conf`.
    ```bash
+   sudo cp /etc/nginx/sites-available/ilsatao /root/nginx-ilsatao.bak   # копия старого
+   sudo cp /root/Cars/deploy/nginx-ilsatao.conf /etc/nginx/sites-available/ilsatao
    sudo nginx -t && sudo systemctl reload nginx
    curl -s https://ilsatao.ru/catalog | grep -o "<title>.*</title>"
    curl -s https://ilsatao.ru/sitemap.xml | head -5
