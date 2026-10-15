@@ -10,7 +10,9 @@ services:
       - src/.env                       # секреты читаются при запуске, в образ не попадают
     environment:
       DATA_DIR: /app/storage
+      FRONTEND_INDEX: /app/frontend/index.html   # для SEO-страниц (src/seo.py)
     ports:
       - "127.0.0.1:8000:8000"          # только для nginx; снаружи порт 8000 закрыт
     volumes:
       - ./storage:/app/storage         # БАЗА, JSON, КАРТИНКИ — на диске сервера
+      - /var/www/ilsatao-frontend:/app/frontend:ro   # собранный фронтенд (только чтение)

@@ -23,11 +23,16 @@ src/
   blog_router.py     /blog          → data/blogs.json
   reviews_router.py  /reviews       → data/reviews.json, data/pending_reviews.json (модерация)
   leads_router.py    /leads         → data/leads.json + письмо о новой заявке
-  upload_router.py   /upload (админ), /upload/public (фото к отзывам, ≤3 МБ, без SVG)
+  upload_router.py   /upload (админ), /upload/public (фото к отзывам, ≤3 МБ, без SVG); сжатие → images.py
+  images.py          WebP до 2000 px при загрузке, миниатюры uploads/thumbs/<имя>.webp (800 px)
+  images_router.py   GET /uploads/thumbs/<имя>.webp — создаёт миниатюру по запросу (подключать ДО mount /uploads)
+  seo.py, seo_router.py  готовый HTML для поисковиков (/seo/render/...), /seo/sitemap.xml, слаги
   auth.py, auth_router.py   /auth/login
   http_client.py     клиент calcus.ru
   data/              СТАРТОВЫЕ JSON (seed): копируются в хранилище, только если там файла нет
   scripts/generate_admin_credentials.py   генерация хеша пароля и JWT-секрета для .env
+  scripts/test_email.py       диагностика почты: docker compose exec api python -m src.scripts.test_email
+  scripts/optimize_uploads.py пережать старые фото (+ --apply)
 tests/
 ```
 
@@ -85,3 +90,19 @@ docker compose logs -f api
 - Ошибки внешних сервисов → 400/502 с понятным `detail` на русском, не 500.
 - Windows-репозиторий с `core.autocrlf=true`: при работе с git из Linux использовать
   `git -c core.autocrlf=true ...`, иначе все файлы покажутся изменёнными.
+
+## SEO-страницы и адреса
+- nginx отправляет `/`, `/catalog`, `/blog`, `/reviews`, `/car/*`, `/blog/*` на `/seo/render/...`:
+  бэкенд берёт собранный `index.html` фронтенда (`FRONTEND_INDEX`, в compose — `/app/frontend`)
+  и вставляет title/description/OG/canonical/JSON-LD и HTML-контент в `#root`. React затем
+  рисует страницу поверх. Нет index.html → 503 → nginx отдаёт обычную SPA.
+- Адрес машины: `/car/<slugify(car_name)>-<id>`, ищем по id в конце. `slugify` ОБЯЗАН совпадать
+  с `src/utils/slug.js` фронтенда (тест `test_slugify_matches_frontend`). `/car/7` → 301 на полный адрес.
+- Статьи: `/blog/<slug>`, `/blog/<id>` → 301 на slug.
+- `/sitemap.xml` генерируется из базы — статичного sitemap во фронтенде нет.
+
+## Почта
+- `send_email` никогда не бросает исключений; повторяет при сетевых ошибках, пробует второй порт
+  (465 SSL ↔ 587 STARTTLS), подключается по IPv4 (`SMTP_FORCE_IPV4`).
+- Яндекс: отправитель всегда = `SMTP_USER`, пароль — пароль приложения. Другие сервисы
+  (SendGrid: `SMTP_USER=apikey`): отправитель = `SMTP_FROM`.

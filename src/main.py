@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -14,6 +15,11 @@ from src.blog_router import router as blog_router
 from src.leads_router import router as leads_router
 from src.auth_router import router as auth_router
 from src.upload_router import router as upload_router
+from src.seo_router import router as seo_router
+from src.images_router import router as images_router
+
+# Логи наших модулей (почта, хранилище) видны в `docker compose logs api`
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 
 @asynccontextmanager
@@ -31,6 +37,9 @@ app = FastAPI(lifespan=lifespan, title="Car API", version="1.0")
 # Папка для загруженных картинок (внутри DATA_DIR, см. config.py)
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
+# Миниатюры /uploads/thumbs/... — РАНЬШЕ, чем mount("/uploads"), иначе mount перехватит
+app.include_router(images_router)
+
 # Раздача статики: GET /uploads/<filename>
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
@@ -40,6 +49,7 @@ app.include_router(reviews_router)
 app.include_router(blog_router)
 app.include_router(leads_router)
 app.include_router(upload_router)
+app.include_router(seo_router)
 
 origins = [
     "http://localhost:5173",

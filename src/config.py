@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     API_CLIENT_ID: str = ""
     # Адрес сайта — для ссылок в письмах (раньше был зашит localhost:5173)
     SITE_URL: str = "https://ilsatao.ru"
+    # Собранный index.html фронтенда — нужен для SEO-страниц (src/seo.py).
+    # В docker-compose папка фронтенда монтируется в /app/frontend.
+    FRONTEND_INDEX: str = ""
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
