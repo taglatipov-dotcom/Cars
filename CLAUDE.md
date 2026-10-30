@@ -19,7 +19,8 @@ src/
   database.py        модель CarsOrm (таблица cars)
   repository.py      CarRepository — запросы к машинам
   schemas.py         Pydantic-схемы (SCar*, SReview*, SBlog*, SLead*)
-  router.py          /cars + /cars/cal (калькулятор таможни)
+  router.py          /cars + /cars/cal (расчёт для машины из каталога) + /cars/calculator (ручной ввод)
+  customs.py         тело запроса к calcus.ru (коды owner/age/engine, проверки) — чистый Python, тесты tests/test_customs.py
   blog_router.py     /blog          → data/blogs.json
   reviews_router.py  /reviews       → data/reviews.json, data/pending_reviews.json (модерация)
   leads_router.py    /leads         → data/leads.json + письмо о новой заявке
@@ -28,7 +29,7 @@ src/
   images_router.py   GET /uploads/thumbs/<имя>.webp — создаёт миниатюру по запросу (подключать ДО mount /uploads)
   seo.py, seo_router.py  готовый HTML для поисковиков (/seo/render/...), /seo/sitemap.xml, слаги
   auth.py, auth_router.py   /auth/login
-  http_client.py     клиент calcus.ru
+  http_client.py     клиент calcus.ru (calc(payload), get_price(car))
   data/              СТАРТОВЫЕ JSON (seed): копируются в хранилище, только если там файла нет
   scripts/generate_admin_credentials.py   генерация хеша пароля и JWT-секрета для .env
   scripts/test_email.py       диагностика почты: docker compose exec api python -m src.scripts.test_email
@@ -79,12 +80,18 @@ docker compose logs -f api
 - Роуты со статичными сегментами (`/submit`, `/pending`, `/slug/{slug}`) объявлять РАНЬШЕ `/{id}`,
   иначе FastAPI пытается распарсить строку как int → 422.
 - Записывающие эндпоинты — только с `Depends(get_current_admin)`. Публичные: чтение, `/leads` POST,
-  `/reviews/submit`, `/upload/public`, `/cars/cal`.
+  `/reviews/submit`, `/upload/public`, `/cars/cal`, `/cars/calculator`.
 - Хранимые коды — английские (`body_type`: SUV, Sedan, MPV, Coupe, Hatchback, Wagon), подписи в UI — русские.
   Тип двигателя/привод/состояние хранятся русскими enum-значениями (см. `schemas.py`) — не менять, на них
   завязаны калькулятор и фронт.
 - Поле марки называется `brend` (историческая опечатка, на ней завязан фронт) — не переименовывать.
 - `china_price` — цена в юанях (¥). Калькулятор отдаёт итоги в рублях.
+- Расчёт таможни: `/cars/cal` — машина из каталога, всегда физлицо для себя (owner=1), мягкие проверки
+  (`strict=False`: у части машин нет мощности/объёма). `/cars/calculator` — ручной ввод (`SCustomsCalcInput`),
+  по умолчанию юрлицо; owner calcus: 1 — физлицо для себя, 2 — юрлицо, 3 — физлицо для перепродажи.
+  calcus присылает sbor/tax/excise/nds/util/total/total2; цена в ₽ = total2 − total (считает фронт).
+- Сайт — B2B (компании, дилеры, автосалоны). Заявка (`SLeadSubmit`) дополнительно хранит `client_type`
+  (company/dealer/showroom/person), `company`, `inn` (10 или 12 цифр), `quantity` — все необязательны.
 - URL загруженных картинок — относительные `/uploads/<uuid>.<ext>`; браузер берёт их по `/uploads/...`
   (nginx `location ^~ /uploads/` → бэкенд). Путь `/api/uploads/...` в проде даёт 404 — не использовать.
 - Ошибки внешних сервисов → 400/502 с понятным `detail` на русском, не 500.

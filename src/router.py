@@ -9,7 +9,8 @@ from src.auth import get_current_admin
 from src.config import settings
 from src.http_client import CALCUSHttpClient
 from src.repository import CarRepository
-from src.schemas import SCar, SCarAdd, SCarId, SCarUpdate, SDeleteResult
+from src.customs import build_customs_payload
+from src.schemas import SCar, SCarAdd, SCarId, SCarUpdate, SCustomsCalcInput, SDeleteResult
 
 router = APIRouter(prefix="/cars", tags=["Машины"])
 
@@ -120,6 +121,20 @@ async def get_calcus(car: Annotated[SCarAdd, Depends()]):
     # Раньше любая ошибка (нет цены, внешний API недоступен) давала 500.
     try:
         return await calcus_client.get_price(car)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except (aiohttp.ClientError, asyncio.TimeoutError):
+        raise HTTPException(
+            status_code=502,
+            detail="Сервис расчёта таможни временно недоступен",
+        )
+
+@router.post("/calculator")
+async def calc_customs(data: SCustomsCalcInput):
+    """Отдельный калькулятор: пользователь вводит данные сам, можно выбрать юрлицо."""
+    try:
+        payload = build_customs_payload(**data.model_dump())
+        return await calcus_client.calc(payload)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except (aiohttp.ClientError, asyncio.TimeoutError):

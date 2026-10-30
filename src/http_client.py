@@ -6,13 +6,7 @@ from aiohttp import ClientSession, ClientTimeout
 from src.config import settings
 from src.schemas import SCarAdd
 
-ENGINE_TYPE_CODES = {
-    "Бензиновый": 1,
-    "Дизельный": 2,
-    "Электрический": 4,
-    "Последовательный гибрид": 5,
-    "Параллельный гибрид": 6,
-}
+from src.customs import ENGINE_TYPE_CODES, OWNER_PERSONAL, build_customs_payload  # noqa: F401
 
 
 class HttpClient:
@@ -39,60 +33,40 @@ class HttpClient:
 
 
 class CALCUSHttpClient(HttpClient):
-    @staticmethod
-    def _resolve_age(year: int | None) -> str:
-        if not year:
-            return "0-3"
-        age = datetime.now().year - year
-        if 0 < age < 3:
-            return "0-3"
-        if age < 5:
-            return "3-5"
-        if age < 7:
-            return "5-7"
-        return "7-0"
+    async def calc(self, payload: dict) -> dict:
+        """POST v1/Customs с готовым телом (см. src/customs.py)."""
+        session = await self._get_session()
+        async with session.post("v1/Customs", json=payload) as response:
+            response.raise_for_status()
+            return await response.json()
 
     async def get_price(self, car: SCarAdd) -> dict:
+        """Расчёт для машины из каталога — всегда как физлицо для себя (owner=1)."""
         if not car.engine_type:
             raise ValueError("engine_type is required for calcus")
         if not car.china_price:
             raise ValueError("china_price is required for calcus")
 
-        engine_code = ENGINE_TYPE_CODES.get(str(car.engine_type))
-        if engine_code is None:
-            raise ValueError(f"Unsupported engine_type: {car.engine_type}")
-
-        if engine_code in (1, 2):  # бензин / дизель
+        engine_type = getattr(car.engine_type, "value", car.engine_type)
+        if ENGINE_TYPE_CODES.get(str(engine_type)) in (1, 2):  # бензин / дизель
             power = car.horsepower or car.engine_power
             power_unit = 1
         else:
             power = (car.engine_power or 0) * 0.4
             power_unit = 2
 
-        value = int((car.engine_volume or 0) * 1000)
-
-        session = await self._get_session()
-        async with session.post(
-            "v1/Customs",
-            json={
-                "owner": 1,
-                "age": self._resolve_age(car.year),
-                "engine": engine_code,
-                "power": int(power or 0),
-                "power_unit": power_unit,
-                "value": value,
-                "price": int(car.china_price),
-                "curr": "CNY",
-                "year": datetime.now().year,
-                "usd_rate": 0,
-                "eur_rate": 0,
-                "cny_rate": 0,
-                "jpy_rate": 0,
-                "krw_rate": 0,
-            },
-        ) as response:
-            response.raise_for_status()
-            return await response.json()
+        payload = build_customs_payload(
+            price=car.china_price,
+            engine_type=str(engine_type),
+            power=power or 0,
+            power_unit=power_unit,
+            engine_volume=car.engine_volume,
+            year=car.year,
+            owner=OWNER_PERSONAL,
+            curr="CNY",
+            strict=False,
+        )
+        return await self.calc(payload)
 
 
 async def _main():

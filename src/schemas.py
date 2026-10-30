@@ -297,6 +297,11 @@ class SLeadSubmit(BaseModel):
     contact_method: str | None = Field(default=None, max_length=64)
     preferences: str | None = Field(default=None, max_length=1000)
     budget: str | None = Field(default=None, max_length=64)
+    # B2B: кто клиент и сколько машин нужно (всё необязательно)
+    client_type: str | None = Field(default=None, max_length=32)   # company / dealer / showroom / person
+    company: str | None = Field(default=None, max_length=160)
+    inn: str | None = Field(default=None, pattern=r"^(\d{10}|\d{12})$")
+    quantity: int | None = Field(default=None, ge=1, le=10000)
     consent: bool = False
     newsletter: bool = False
     source: str | None = Field(default=None, max_length=64)
@@ -327,3 +332,16 @@ class SUploadResult(BaseModel):
     url: str
     filename: str
     size: int
+
+# ---------- Калькулятор растаможки (данные вводит пользователь) ----------
+
+class SCustomsCalcInput(BaseModel):
+    """Тело POST /cars/calculator. Проверки значений — в src/customs.py."""
+    price: float = Field(gt=0, description="Стоимость автомобиля в валюте curr")
+    curr: str = Field(default="CNY", max_length=3)
+    owner: int = Field(default=2, ge=1, le=3, description="1 — физлицо, 2 — юрлицо, 3 — физлицо для перепродажи")
+    engine_type: str = Field(max_length=32, description="Бензиновый, Дизельный, Электрический, ... гибрид")
+    engine_volume: float | None = Field(default=None, ge=0, le=10, description="Объём, л")
+    power: float = Field(gt=0, le=3000)
+    power_unit: int = Field(default=1, ge=1, le=2, description="1 — л.с., 2 — кВт")
+    year: int | None = Field(default=None, ge=1950, le=2100, description="Год выпуска")

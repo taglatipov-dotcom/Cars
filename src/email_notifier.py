@@ -187,6 +187,14 @@ def send_email(subject: str, body: str, to: str | None = None) -> bool:
     return False
 
 
+CLIENT_TYPES = {
+    "company": "Компания (автопарк)",
+    "dealer": "Дилер / перекупщик",
+    "showroom": "Автосалон / площадка",
+    "person": "Частное лицо",
+}
+
+
 def notify_new_lead(lead: dict) -> None:
     """Уведомление о новой заявке. Вызывается из фоновой задачи."""
     # Убираем эмодзи из темы — не все SMTP любят их в заголовке.
@@ -202,6 +210,10 @@ def notify_new_lead(lead: dict) -> None:
 
 📞 Телефон:        {lead.get('phone') or '—'}
 💬 Способ связи:   {lead.get('contact_method') or '—'}
+👥 Клиент:         {CLIENT_TYPES.get(lead.get('client_type'), lead.get('client_type') or '—')}
+🏢 Компания:       {lead.get('company') or '—'}
+🧾 ИНН:            {lead.get('inn') or '—'}
+🚘 Количество:     {lead.get('quantity') or '—'}
 💰 Бюджет:         {lead.get('budget') or '—'}
 
 📝 Предпочтения:

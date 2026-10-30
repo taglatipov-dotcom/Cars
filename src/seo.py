@@ -173,14 +173,14 @@ ORGANIZATION_LD = {
     "name": "ILSATAO",
     "url": "https://ilsatao.ru",
     "telephone": "+7 987 498 17 37",
-    "description": "Подбор, покупка и доставка автомобилей из Китая в Россию под ключ",
+    "description": "Поставки автомобилей из Китая для компаний, дилеров и автосалонов",
     "areaServed": "RU",
 }
 
 
 def nav_html() -> str:
     return (
-        '<nav><a href="/">Главная</a> · <a href="/catalog">Каталог</a> · '
+        '<nav><a href="/">Главная</a> · <a href="/catalog">Каталог</a> · <a href="/calculator">Калькулятор</a> · '
         '<a href="/blog">Блог</a> · <a href="/reviews">Отзывы</a> · <a href="/about">О нас</a></nav>'
     )
 
