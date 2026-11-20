@@ -39,8 +39,8 @@ src/
   data/              СТАРТОВЫЕ JSON (seed): копируются в хранилище, только если там файла нет
   scripts/generate_admin_credentials.py   генерация хеша пароля и JWT-секрета для .env
   scripts/test_email.py       диагностика почты: docker compose exec api python -m src.scripts.test_email
-  telegram_notifier.py        заявки в Telegram (Bot API через urllib, TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID в .env)
-  scripts/test_telegram.py    chat id + тестовое сообщение: docker compose exec api python -m src.scripts.test_telegram
+  telegram_notifier.py        заявки в Telegram-канал (Bot API через urllib, TELEGRAM_BOT_TOKEN / TELEGRAM_CHANNEL в .env; бот — админ канала)
+  scripts/test_telegram.py    id канала + тестовая публикация: docker compose exec api python -m src.scripts.test_telegram
   scripts/optimize_uploads.py пережать старые фото (+ --apply)
 tests/
 ```

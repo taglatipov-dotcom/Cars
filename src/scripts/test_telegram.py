@@ -1,13 +1,13 @@
 """
-Настройка и проверка уведомлений в Telegram.
+Настройка и проверка публикации заявок в Telegram-канал.
 
     На сервере:  docker compose exec api python -m src.scripts.test_telegram
     Локально:    python -m src.scripts.test_telegram
 
-1) Если TELEGRAM_CHAT_ID не задан — показывает чаты, которые писали боту
-   (напишите боту /start или добавьте его в группу и напишите там что-нибудь),
-   и подсказывает, что вписать в .env.
-2) Если задан — отправляет тестовую заявку во все чаты.
+1) Если TELEGRAM_CHANNEL не задан — показывает каналы, где бот видел публикации,
+   и подсказывает, что вписать в .env. (Добавьте бота администратором канала
+   и опубликуйте в канале любое сообщение — тогда канал появится в списке.)
+2) Если задан — публикует в канал тестовую заявку.
 """
 import logging
 import sys
@@ -28,36 +28,35 @@ def main() -> int:
         print(f"Не удалось связаться с Telegram ({tg.TELEGRAM_API_URL}): {e}")
         print("Проверьте токен. Если сервер не видит api.telegram.org — задайте TELEGRAM_API_URL (прокси-зеркало).")
         return 1
-    print(f"Бот: @{me.get('username')} ({me.get('first_name')})")
+    print(f"Бот: @{me.get('username')}")
 
-    if not tg.chat_ids():
-        print("\nTELEGRAM_CHAT_ID не задан. Чаты, которые писали боту:")
+    if not tg.TELEGRAM_CHANNEL:
+        print("\nTELEGRAM_CHANNEL не задан. Каналы, которые видит бот:")
         try:
-            updates = tg.api_call("getUpdates", {"limit": 100})
+            updates = tg.api_call("getUpdates", {"limit": 100, "allowed_updates": ["channel_post", "my_chat_member"]})
         except Exception as e:  # noqa: BLE001
             print(f"  getUpdates: {e}")
             return 1
-        seen = {}
+        channels = {}
         for u in updates or []:
-            m = u.get("message") or u.get("channel_post") or u.get("my_chat_member") or {}
-            chat = m.get("chat") or {}
-            if chat.get("id"):
-                seen[chat["id"]] = chat.get("title") or " ".join(
-                    x for x in (chat.get("first_name"), chat.get("last_name")) if x) or chat.get("username")
-        if not seen:
-            print(f"  Пусто. Откройте https://t.me/{me.get('username')} и нажмите «Старт» "
-                  "(или добавьте бота в группу и напишите там), затем запустите скрипт снова.")
+            chat = (u.get("channel_post") or u.get("my_chat_member") or {}).get("chat") or {}
+            if chat.get("type") == "channel":
+                channels[chat["id"]] = (chat.get("title"), chat.get("username"))
+        if not channels:
+            print("  Пусто. Добавьте бота в канал АДМИНИСТРАТОРОМ (право «Публикация сообщений»),\n"
+                  "  опубликуйте в канале любое сообщение и запустите скрипт снова.")
             return 1
-        for cid, name in seen.items():
-            print(f"  {cid}  —  {name}")
-        print("\nВпишите нужный id в src/.env:  TELEGRAM_CHAT_ID=<id>  (несколько — через запятую)")
+        for cid, (title, username) in channels.items():
+            alt = f"   (или @{username})" if username else ""
+            print(f"  {cid}  —  {title}{alt}")
+        print("\nВпишите в src/.env:  TELEGRAM_CHANNEL=<id канала>  и запустите скрипт ещё раз.")
         return 0
 
     ok = tg.send_message(tg.build_lead_message({
         "id": 0, "source": "box", "phone": "+7 (900) 000-00-00", "contact_method": "Telegram",
-        "budget": "1 990 ₽", "preferences": "Тестовое сообщение: уведомления о заявках работают ✅",
+        "budget": "1 990 ₽", "preferences": "Тестовая заявка: публикация в канал работает ✅",
     }))
-    print("Отправлено ✅" if ok else "Не отправлено — смотрите сообщения выше")
+    print("Опубликовано в канал ✅" if ok else "Не опубликовано — смотрите сообщения выше")
     return 0 if ok else 1
 
 

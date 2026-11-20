@@ -1,13 +1,14 @@
 """
-Уведомления о новых заявках в Telegram (через Bot API, без сторонних библиотек).
+Уведомления о новых заявках в Telegram-канал (через Bot API, без сторонних библиотек).
 
 Настройки в src/.env:
     TELEGRAM_BOT_TOKEN   токен бота от @BotFather
-    TELEGRAM_CHAT_ID     куда слать: id чата/группы/канала; несколько — через запятую
-    TELEGRAM_API_URL     (необязательно) адрес Bot API, если api.telegram.org недоступен
-                         с сервера — например, свой прокси-зеркало. По умолчанию https://api.telegram.org
+    TELEGRAM_CHANNEL     канал, куда бот публикует заявки:
+                         публичный — @имя_канала, закрытый — числовой id вида -100xxxxxxxxxx
+    TELEGRAM_API_URL     (необязательно) адрес Bot API, если api.telegram.org недоступен с сервера
 
-Узнать chat id и проверить отправку:
+Бот должен быть АДМИНИСТРАТОРОМ канала с правом «Публикация сообщений».
+Узнать id канала и проверить отправку:
     docker compose exec api python -m src.scripts.test_telegram
 
 Как и почта: вызывается в BackgroundTasks, никогда не бросает исключение —
@@ -30,7 +31,7 @@ ENV_PATH = Path(__file__).resolve().parent / ".env"
 load_dotenv(dotenv_path=ENV_PATH)
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
+TELEGRAM_CHANNEL = os.getenv("TELEGRAM_CHANNEL", "").strip()
 TELEGRAM_API_URL = os.getenv("TELEGRAM_API_URL", "https://api.telegram.org").rstrip("/")
 TELEGRAM_TIMEOUT = int(os.getenv("TELEGRAM_TIMEOUT", "10"))
 TELEGRAM_RETRIES = int(os.getenv("TELEGRAM_RETRIES", "3"))
@@ -53,15 +54,11 @@ CLIENT_TYPES = {
 
 
 def is_telegram_configured() -> bool:
-    return bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID)
-
-
-def chat_ids() -> list[str]:
-    return [c.strip() for c in TELEGRAM_CHAT_ID.split(",") if c.strip()]
+    return bool(TELEGRAM_BOT_TOKEN and TELEGRAM_CHANNEL)
 
 
 def api_call(method: str, payload: dict | None = None) -> dict:
-    """Вызов Bot API. Бросает исключение при сетевой ошибке или ok=false."""
+    """Вызов Bot API. Бросает RuntimeError при ok=false, OSError — при сетевой ошибке."""
     url = f"{TELEGRAM_API_URL}/bot{TELEGRAM_BOT_TOKEN}/{method}"
     data = json.dumps(payload or {}).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
@@ -81,44 +78,40 @@ def api_call(method: str, payload: dict | None = None) -> dict:
 
 def send_message(text: str, buttons: list[tuple[str, str]] | None = None) -> bool:
     """
-    Отправляет HTML-сообщение во все TELEGRAM_CHAT_ID. True — если дошло хотя бы в один чат.
-    Сетевые ошибки повторяются; ошибки вида «чат не найден / бот заблокирован» — нет.
+    Публикует HTML-сообщение в TELEGRAM_CHANNEL. True — если опубликовано.
+    Сетевые ошибки повторяются; ошибки вида «канал не найден / нет прав» — нет.
     """
     if not is_telegram_configured():
-        log.info("[telegram] Не настроен (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID) — пропускаем")
+        log.info("[telegram] Не настроен (TELEGRAM_BOT_TOKEN / TELEGRAM_CHANNEL) — пропускаем")
         return False
 
-    payload_base = {"text": text, "parse_mode": "HTML", "disable_web_page_preview": True}
+    payload = {"chat_id": TELEGRAM_CHANNEL, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True}
     if buttons:
-        payload_base["reply_markup"] = {"inline_keyboard": [[{"text": t, "url": u} for t, u in buttons]]}
+        payload["reply_markup"] = {"inline_keyboard": [[{"text": t, "url": u} for t, u in buttons]]}
 
-    sent_any = False
-    for chat in chat_ids():
-        payload = {**payload_base, "chat_id": chat}
-        for attempt in range(1, TELEGRAM_RETRIES + 1):
-            try:
-                api_call("sendMessage", payload)
-                log.info("[telegram] Отправлено в %s", chat)
-                sent_any = True
-                break
-            except RuntimeError as e:
-                msg = str(e)
-                # Кнопка с адресом localhost/http Telegram не принимает — шлём без неё
-                if "reply_markup" in payload and ("button" in msg.lower() or "url" in msg.lower()):
-                    payload = {k: v for k, v in payload.items() if k != "reply_markup"}
-                    continue
-                if msg.startswith(("400", "401", "403", "404")):
-                    log.error("[telegram] Чат %s: %s. Проверьте TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID и что боту "
-                              "написали /start (для группы — бот добавлен в группу).", chat, msg)
-                    break
-                log.warning("[telegram] Чат %s, попытка %s: %s", chat, attempt, msg)
-            except (OSError, ValueError) as e:
-                log.warning("[telegram] Чат %s, попытка %s: %s: %s", chat, attempt, type(e).__name__, e)
-            if attempt < TELEGRAM_RETRIES:
-                time.sleep(2 * attempt)
-        else:
-            log.error("[telegram] Не отправлено в %s после %s попыток", chat, TELEGRAM_RETRIES)
-    return sent_any
+    for attempt in range(1, TELEGRAM_RETRIES + 1):
+        try:
+            api_call("sendMessage", payload)
+            log.info("[telegram] Опубликовано в %s", TELEGRAM_CHANNEL)
+            return True
+        except RuntimeError as e:
+            msg = str(e)
+            # Кнопку с адресом localhost/http Telegram не принимает — публикуем без неё
+            if "reply_markup" in payload and ("button" in msg.lower() or "url" in msg.lower()):
+                payload = {k: v for k, v in payload.items() if k != "reply_markup"}
+                continue
+            if msg.startswith(("400", "401", "403", "404")):
+                log.error("[telegram] Канал %s: %s. Проверьте TELEGRAM_BOT_TOKEN и TELEGRAM_CHANNEL и что бот — "
+                          "администратор канала с правом публикации.", TELEGRAM_CHANNEL, msg)
+                return False
+            log.warning("[telegram] Попытка %s: %s", attempt, msg)
+        except (OSError, ValueError) as e:
+            log.warning("[telegram] Попытка %s: %s: %s", attempt, type(e).__name__, e)
+        if attempt < TELEGRAM_RETRIES:
+            time.sleep(2 * attempt)
+
+    log.error("[telegram] Не опубликовано в %s после %s попыток", TELEGRAM_CHANNEL, TELEGRAM_RETRIES)
+    return False
 
 
 def _e(v) -> str:
@@ -136,9 +129,7 @@ def build_lead_message(lead: dict) -> str:
     ]
     if source not in SECTIONS:
         # поля сайта авто (B2B)
-        lines += [
-            f"👥 Клиент: {_e(CLIENT_TYPES.get(lead.get('client_type'), lead.get('client_type')))}",
-        ]
+        lines.append(f"👥 Клиент: {_e(CLIENT_TYPES.get(lead.get('client_type'), lead.get('client_type')))}")
         if lead.get("company"):
             lines.append(f"🏢 {_e(lead.get('company'))}" + (f", ИНН {_e(lead.get('inn'))}" if lead.get("inn") else ""))
         if lead.get("quantity"):
