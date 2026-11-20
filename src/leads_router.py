@@ -4,6 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
 from src.auth import get_current_admin
 from src.email_notifier import notify_new_lead
+from src.telegram_notifier import notify_new_lead_telegram
 from src.storage import json_path, load_json_list, save_json_list
 from src.schemas import (
     LeadStatus,
@@ -50,6 +51,7 @@ async def create_lead(
     # Отправка письма в фоне — не тормозит ответ пользователю.
     # Если SMTP не настроен или упал — заявка всё равно сохранена.
     background.add_task(notify_new_lead, item)
+    background.add_task(notify_new_lead_telegram, item)   # дубль в Telegram (если настроен)
 
     return {"ok": True, "lead_id": new_id}
 

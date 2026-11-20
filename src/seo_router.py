@@ -1,8 +1,9 @@
 """
 Страницы для поисковиков и sitemap. Описание схемы — в src/seo.py.
 
-nginx (см. nginx.txt):
-    /, /catalog, /blog, /reviews, /car/*, /blog/*  →  /seo/render/<путь>
+nginx (deploy/nginx-ilsatao.conf), сайт авто живёт в /cars/:
+    /cars/, /cars/catalog, /cars/calculator, /cars/blog, /cars/reviews, /cars/about,
+    /cars/privacy, /cars/car/*, /cars/blog/*       →  /seo/render/<путь без /cars>
     /sitemap.xml                                   →  /seo/sitemap.xml
 """
 import re
@@ -63,7 +64,7 @@ def _breadcrumbs(*items: tuple[str, str]) -> dict:
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
         "itemListElement": [
-            {"@type": "ListItem", "position": i + 1, "name": name, "item": seo.site_url(path)}
+            {"@type": "ListItem", "position": i + 1, "name": name, "item": seo.page_url(path)}
             for i, (name, path) in enumerate(items)
         ],
     }
@@ -126,7 +127,7 @@ async def page_car(slug: str) -> Response:
     canonical = seo.car_slug(car)
     if slug != canonical:
         # /car/7 или старое название → постоянный редирект на понятный адрес
-        return RedirectResponse(f"/car/{canonical}", status_code=301)
+        return RedirectResponse(seo.cars_path(f"/car/{canonical}"), status_code=301)
 
     name = seo.car_name(car)
     # год дописываем, только если его нет в названии («Zeekr 001 2026»)
@@ -186,7 +187,7 @@ async def page_car(slug: str) -> Response:
                 "price": car.china_price,
                 "priceCurrency": "CNY",
                 "availability": "https://schema.org/InStock",
-                "url": seo.site_url(f"/car/{canonical}"),
+                "url": seo.page_url(f"/car/{canonical}"),
             }} if car.china_price else {}),
         },
         _breadcrumbs(("Главная", "/"), ("Каталог", "/catalog"), (name, f"/car/{canonical}")),
@@ -223,7 +224,7 @@ async def page_blog_post(slug: str) -> Response:
     if slug.isdigit():
         b = next((x for x in blogs if x.get("id") == int(slug)), None)
         if b and b.get("slug"):
-            return RedirectResponse(f"/blog/{b['slug']}", status_code=301)
+            return RedirectResponse(seo.cars_path(f"/blog/{b['slug']}"), status_code=301)
     else:
         b = next((x for x in blogs if x.get("slug") == slug), None)
     if b is None:
@@ -253,7 +254,7 @@ async def page_blog_post(slug: str) -> Response:
             **({"datePublished": published} if published else {}),
             "author": {"@type": "Organization", "name": b.get("author") or "ILSATAO"},
             "publisher": {"@type": "Organization", "name": "ILSATAO"},
-            "mainEntityOfPage": seo.site_url(path),
+            "mainEntityOfPage": seo.page_url(path),
         },
         _breadcrumbs(("Главная", "/"), ("Блог", "/blog"), (b.get("title") or "Статья", path)),
     ]
@@ -281,6 +282,81 @@ async def page_reviews() -> Response:
     ))
 
 
+async def page_calculator() -> Response:
+    body = (
+        seo.nav_html()
+        + "<h1>Калькулятор растаможки автомобиля из Китая</h1>"
+        "<p>Введите данные автомобиля — посчитаем пошлину, НДС, утильсбор и итог под ключ с доставкой. "
+        "Для юрлиц ставки отличаются от расчёта для частных лиц.</p>"
+        "<h2>Что учитывает расчёт</h2><ul>"
+        "<li>Стоимость автомобиля в юанях, долларах, евро или рублях</li>"
+        "<li>Год выпуска, тип и объём двигателя, мощность в л.с. или кВт</li>"
+        "<li>Таможенный сбор, пошлину, акциз, НДС и утилизационный сбор</li>"
+        "<li>Доставку из Китая и итоговую стоимость под ключ, в том числе за партию автомобилей</li>"
+        "</ul>"
+        "<h2>Кто ввозит</h2><ul>"
+        "<li>Юрлицо (ООО или ИП) — для компаний, дилеров и автосалонов</li>"
+        "<li>Физлицо для перепродажи</li>"
+        "<li>Физлицо для себя</li>"
+        "</ul>"
+        '<p><a href="/catalog">Каталог автомобилей из Китая с ценами</a></p>'
+    )
+    return _html(seo.render_page(
+        title="Калькулятор растаможки авто из Китая онлайн",
+        description="Онлайн-калькулятор растаможки автомобиля из Китая для юрлиц и физлиц: пошлина, НДС, "
+                    "утильсбор, доставка и итоговая цена под ключ в рублях.",
+        canonical_path="/calculator",
+        body_html=body,
+        json_ld=_breadcrumbs(("Главная", "/"), ("Калькулятор растаможки", "/calculator")),
+    ))
+
+
+async def page_about() -> Response:
+    body = (
+        seo.nav_html()
+        + "<h1>О компании ILSATAO</h1>"
+        "<p>Поставки автомобилей из Китая для бизнеса — без поиска посредников и самостоятельной логистики.</p>"
+        "<h2>Не просто найти автомобиль. Найти тот, который стоит покупать.</h2>"
+        "<p>Между ценой в объявлении и конечной стоимостью автомобиля в России может быть существенная разница. "
+        "Мы сравниваем варианты, уточняем информацию у продавцов, рассчитываем стоимость ввоза и помогаем "
+        "выбрать автомобиль, который подходит не только по характеристикам, но и по общему бюджету.</p>"
+        "<h2>Китай ближе, чем кажется</h2>"
+        "<p>Часть нашей команды находится в Китае: общаемся с продавцами, уточняем детали, организуем осмотры. "
+        "В России ведём работу с клиентами, готовим расчёты, согласовываем условия покупки и координируем "
+        "дальнейшие этапы.</p>"
+        "<h2>Нам важны детали</h2>"
+        "<p>До выкупа обсуждаем не только сам автомобиль, но и его проверку, стоимость доставки, "
+        "таможенные расходы, порядок платежей и оформления документов.</p>"
+        '<p>Телефон: <a href="tel:+79874981737">+7 987 498 17 37</a></p>'
+    )
+    return _html(seo.render_page(
+        title="О компании — поставки автомобилей из Китая",
+        description="ILSATAO — поставки автомобилей из Китая для компаний, дилеров и автосалонов. "
+                    "Команда в Китае и России: подбор, проверка, выкуп, доставка и растаможка.",
+        canonical_path="/about",
+        body_html=body,
+        json_ld=[seo.ORGANIZATION_LD,
+                 _breadcrumbs(("Главная", "/"), ("О компании", "/about"))],
+    ))
+
+
+async def page_privacy() -> Response:
+    body = (
+        seo.nav_html()
+        + "<h1>Политика конфиденциальности</h1>"
+        "<p>Настоящая Политика определяет порядок обработки и защиты персональных данных пользователей "
+        "сайта ILSATAO. Мы собираем только те данные, которые необходимы для оказания услуг по подбору "
+        "и доставке автомобилей из Китая, и обрабатываем их в соответствии с законодательством "
+        "Российской Федерации.</p>"
+    )
+    return _html(seo.render_page(
+        title="Политика конфиденциальности",
+        description="Порядок обработки и защиты персональных данных пользователей сайта ILSATAO.",
+        canonical_path="/privacy",
+        body_html=body,
+    ))
+
+
 @router.get("/render/{path:path}")
 async def render(path: str = "") -> Response:
     path = path.strip("/")
@@ -288,6 +364,12 @@ async def render(path: str = "") -> Response:
         return await page_home()
     if path == "catalog":
         return await page_catalog()
+    if path == "calculator":
+        return await page_calculator()
+    if path == "about":
+        return await page_about()
+    if path == "privacy":
+        return await page_privacy()
     if path == "blog":
         return await page_blog_list()
     if path == "reviews":
@@ -305,6 +387,55 @@ async def render_root() -> Response:
     return await page_home()
 
 
+# ---------------- корень домена: витрина, /box, /bags ----------------
+# nginx: /, /box, /bags → /seo/site/_, /seo/site/_box, /seo/site/_bags
+
+def _shop(name: str) -> list[dict]:
+    return [i for i in load_json_list(json_path(f"shop_{name}.json")) if i.get("active", True)]
+
+
+@router.get("/site/{name}")
+async def render_site(name: str) -> Response:
+    name = name.lstrip("_")
+    nav = ('<nav><a href="/">ILSATAO</a> · <a href="/cars/">Авто из Китая</a> · '
+           '<a href="/box">Новогодние боксы</a> · <a href="/bags">Сумки</a></nav>')
+    if name == "box":
+        presets = _shop("box_presets")
+        items = _shop("box_items")
+        body = (nav + "<h1>Новогодние боксы — собери свой подарок</h1>"
+                "<p>Конструктор подарочного бокса: выберите из " + str(len(items)) + " товаров — мандарины, "
+                "шоколад, пряники, чай, свечи, пледы. Лимит бокса — 5 кг и 30×30×30 см. "
+                "Или возьмите один из готовых боксов.</p><h2>Готовые боксы</h2><ul>"
+                + "".join(f"<li><b>{seo.esc(p['name'])}</b> — {seo.esc(p.get('tagline') or '')}</li>" for p in presets)
+                + "</ul>")
+        return _html(seo.render_page(
+            title="Новогодние боксы — конструктор подарков | ILSATAO",
+            description="Соберите новогодний подарочный бокс из 40 товаров или выберите готовый: "
+                        "мандарины, шоколад, пряники, чай, свечи. Доставка по России.",
+            canonical_path="/box", body_html=body, root=True))
+    if name == "bags":
+        bags = _shop("bags")
+        body = (nav + "<h1>Сумки ILSATAO</h1><p>Шоперы, рюкзаки, сумки через плечо, клатчи и дорожные сумки.</p><ul>"
+                + "".join(f"<li>{seo.esc(b['name'])} — {seo.esc(b.get('category'))}, "
+                          f"{seo.esc(b.get('material') or '')}, {int(b.get('price') or 0):,} ₽</li>".replace(",", " ")
+                          for b in bags)
+                + "</ul>")
+        return _html(seo.render_page(
+            title="Сумки — шоперы, рюкзаки, кросс-боди | ILSATAO",
+            description="Каталог сумок ILSATAO: шоперы, рюкзаки, сумки через плечо, клатчи и дорожные сумки. "
+                        "Заказ онлайн, доставка по России.",
+            canonical_path="/bags", body_html=body, root=True))
+    body = (nav + "<h1>ILSATAO</h1><ul>"
+            "<li><a href=\"/cars/\">Автомобили из Китая для бизнеса</a> — подбор, выкуп, доставка, растаможка</li>"
+            "<li><a href=\"/box\">Новогодние боксы</a> — конструктор подарков и готовые наборы</li>"
+            "<li><a href=\"/bags\">Сумки</a> — шоперы, рюкзаки, кросс-боди</li></ul>")
+    return _html(seo.render_page(
+        title="ILSATAO — авто из Китая, новогодние боксы и сумки",
+        description="ILSATAO: поставки автомобилей из Китая для бизнеса, конструктор новогодних подарочных боксов "
+                    "и каталог сумок.",
+        canonical_path="/", body_html=body, root=True))
+
+
 # ---------------- sitemap ----------------
 
 @router.get("/sitemap.xml")
@@ -312,14 +443,22 @@ async def sitemap() -> Response:
     today = date.today().isoformat()
     urls: list[str] = []
 
-    def add(path, priority, changefreq="weekly", lastmod=None, images=()):
+    def add(path, priority, changefreq="weekly", lastmod=None, images=(), root=False):
+        """path — путь страницы авто без /cars; root=True — путь от корня домена (витрина, /box, /bags)."""
+        loc = seo.site_url(path) if root else seo.page_url(path)
         img = "".join(f"<image:image><image:loc>{seo.esc(i)}</image:loc></image:image>" for i in images if i)
         urls.append(
-            f"<url><loc>{seo.esc(seo.site_url(path))}</loc>"
+            f"<url><loc>{seo.esc(loc)}</loc>"
             f"<lastmod>{lastmod or today}</lastmod><changefreq>{changefreq}</changefreq>"
             f"<priority>{priority}</priority>{img}</url>"
         )
 
+    # Корень домена: витрина и другие разделы (статические страницы проекта ilsatao-site)
+    add("/", "1.0", "weekly", root=True)
+    add("/box", "0.8", "weekly", root=True)
+    add("/bags", "0.8", "weekly", root=True)
+
+    # Сайт авто (/cars/...)
     add("/", "1.0", "daily")
     add("/catalog", "0.9", "daily")
     add("/blog", "0.7")

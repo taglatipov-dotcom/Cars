@@ -295,7 +295,7 @@ class SLeadSubmit(BaseModel):
     """Что присылает публичная форма."""
     phone: str = Field(min_length=5, max_length=32)
     contact_method: str | None = Field(default=None, max_length=64)
-    preferences: str | None = Field(default=None, max_length=1000)
+    preferences: str | None = Field(default=None, max_length=4000)  # состав заказа бокса/сумок может быть длинным
     budget: str | None = Field(default=None, max_length=64)
     # B2B: кто клиент и сколько машин нужно (всё необязательно)
     client_type: str | None = Field(default=None, max_length=32)   # company / dealer / showroom / person

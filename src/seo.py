@@ -54,7 +54,33 @@ def parse_car_id(slug: str) -> int | None:
 
 
 def site_url(path: str = "/") -> str:
+    """Абсолютный адрес от корня домена (картинки /uploads/..., страницы витрины)."""
     return settings.SITE_URL.rstrip("/") + path
+
+
+# Сайт авто живёт в подпапке: ilsatao.ru/cars/ (корень — витрина, /box, /bags — другие разделы).
+# Все пути страниц авто в этом модуле и в seo_router пишутся БЕЗ префикса ("/catalog", "/car/x"),
+# префикс добавляют cars_path()/page_url() и render_page (для ссылок в body_html).
+CARS_BASE = "/cars"
+
+
+def cars_path(path: str = "/") -> str:
+    """"/catalog" → "/cars/catalog", "/" → "/cars/"."""
+    return CARS_BASE + (path if path.startswith("/") else "/" + path)
+
+
+def page_url(path: str = "/") -> str:
+    """Абсолютный адрес страницы сайта авто (canonical, og:url, sitemap, JSON-LD)."""
+    return site_url(cars_path(path))
+
+
+def prefix_links(html: str) -> str:
+    """href="/catalog" → href="/cars/catalog". Не трогает /uploads/, /api/ и уже префиксные ссылки."""
+    return re.sub(
+        r'href="/(?!cars/|cars"|uploads/|api/|/)',
+        f'href="{CARS_BASE}/',
+        html,
+    )
 
 
 def abs_image(url: str | None) -> str | None:
@@ -127,14 +153,21 @@ def render_page(
     og_type: str = "website",
     json_ld: dict | list | None = None,
     noindex: bool = False,
+    root: bool = False,
 ) -> str | None:
+    """root=True — страница от корня домена (витрина, /box, /bags): canonical без /cars,
+    ссылки в body_html не префиксуются."""
     tpl = load_index_html()
     if tpl is None:
         return None
 
     full_title = f"{title} | ILSATAO" if "ILSATAO" not in title else title
     description = re.sub(r"\s+", " ", description or "").strip()[:300]
-    canonical = site_url(canonical_path)
+    if root:
+        canonical = site_url(canonical_path)
+    else:
+        canonical = page_url(canonical_path)
+        body_html = prefix_links(body_html)
 
     # Убираем из шаблона мета-теги, которые заменяем
     tpl = re.sub(r"<title>.*?</title>", "", tpl, flags=re.S)
@@ -171,7 +204,7 @@ ORGANIZATION_LD = {
     "@context": "https://schema.org",
     "@type": "AutoDealer",
     "name": "ILSATAO",
-    "url": "https://ilsatao.ru",
+    "url": "https://ilsatao.ru/cars/",
     "telephone": "+7 987 498 17 37",
     "description": "Поставки автомобилей из Китая для компаний, дилеров и автосалонов",
     "areaServed": "RU",

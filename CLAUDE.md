@@ -23,16 +23,24 @@ src/
   customs.py         тело запроса к calcus.ru (коды owner/age/engine, проверки) — чистый Python, тесты tests/test_customs.py
   blog_router.py     /blog          → data/blogs.json
   reviews_router.py  /reviews       → data/reviews.json, data/pending_reviews.json (модерация)
-  leads_router.py    /leads         → data/leads.json + письмо о новой заявке
+  leads_router.py    /leads         → data/leads.json + письмо и сообщение в Telegram о новой заявке (одни заявки на все разделы:
+                     source = box / bags — заказы с /box и /bags, остальное — сайт авто)
   upload_router.py   /upload (админ), /upload/public (фото к отзывам, ≤3 МБ, без SVG); сжатие → images.py
   images.py          WebP до 2000 px при загрузке, миниатюры uploads/thumbs/<имя>.webp (800 px)
   images_router.py   GET /uploads/thumbs/<имя>.webp — создаёт миниатюру по запросу (подключать ДО mount /uploads)
-  seo.py, seo_router.py  готовый HTML для поисковиков (/seo/render/...), /seo/sitemap.xml, слаги
+  seo.py, seo_router.py  готовый HTML для поисковиков: сайт авто /seo/render/<путь без /cars>,
+                     витрина и разделы /seo/site/_ , _box, _bags; /seo/sitemap.xml; слаги.
+                     Сайт авто живёт в /cars/: пути в коде пишутся БЕЗ /cars, префикс добавляют
+                     seo.cars_path()/page_url() и render_page (ссылки href="/..." в body_html)
+  shop_router.py     /shop/{box_items|box_presets|bags} → data/shop_*.json: публично — активные,
+                     админка — /all, POST, PUT /{id}, DELETE /{id}. Стартовые данные — src/data/shop_*.json
   auth.py, auth_router.py   /auth/login
   http_client.py     клиент calcus.ru (calc(payload), get_price(car))
   data/              СТАРТОВЫЕ JSON (seed): копируются в хранилище, только если там файла нет
   scripts/generate_admin_credentials.py   генерация хеша пароля и JWT-секрета для .env
   scripts/test_email.py       диагностика почты: docker compose exec api python -m src.scripts.test_email
+  telegram_notifier.py        заявки в Telegram (Bot API через urllib, TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID в .env)
+  scripts/test_telegram.py    chat id + тестовое сообщение: docker compose exec api python -m src.scripts.test_telegram
   scripts/optimize_uploads.py пережать старые фото (+ --apply)
 tests/
 ```
@@ -71,6 +79,8 @@ python src/scripts/generate_admin_credentials.py
 cd /root/Cars && git pull && docker compose up -d --build
 docker compose logs -f api
 ```
+- Структура домена: `/` витрина, `/cars/...` сайт авто, `/box`, `/bags`, `/admin` — одно React-приложение;
+  старые адреса без `/cars` nginx отдаёт 301-м (`deploy/nginx-ilsatao.conf`).
 - nginx: `/api/` → `127.0.0.1:8000/` (префикс срезается), `location ^~ /uploads/` → бэкенд.
   `^~` обязателен: без него regex-локация для `.jpg/.png` перехватывает картинки → 404.
 - Порт 8000 опубликован только на `127.0.0.1` — наружу ходим только через nginx.
@@ -99,7 +109,8 @@ docker compose logs -f api
   `git -c core.autocrlf=true ...`, иначе все файлы покажутся изменёнными.
 
 ## SEO-страницы и адреса
-- nginx отправляет `/`, `/catalog`, `/blog`, `/reviews`, `/car/*`, `/blog/*` на `/seo/render/...`:
+- nginx отправляет `/`, `/catalog`, `/calculator`, `/blog`, `/reviews`, `/about`, `/privacy`,
+  `/car/*`, `/blog/*` на `/seo/render/...`:
   бэкенд берёт собранный `index.html` фронтенда (`FRONTEND_INDEX`, в compose — `/app/frontend`)
   и вставляет title/description/OG/canonical/JSON-LD и HTML-контент в `#root`. React затем
   рисует страницу поверх. Нет index.html → 503 → nginx отдаёт обычную SPA.

@@ -17,6 +17,7 @@ from src.auth_router import router as auth_router
 from src.upload_router import router as upload_router
 from src.seo_router import router as seo_router
 from src.images_router import router as images_router
+from src.shop_router import router as shop_router
 
 # Логи наших модулей (почта, хранилище) видны в `docker compose logs api`
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -50,6 +51,7 @@ app.include_router(blog_router)
 app.include_router(leads_router)
 app.include_router(upload_router)
 app.include_router(seo_router)
+app.include_router(shop_router)
 
 origins = [
     "http://localhost:5173",
